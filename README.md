@@ -15,6 +15,7 @@ Before training the NeRF, you need to make sure the image data is formatted as a
 
 For this purpose, we provide you dataloader utilities to run.
 
+## Data Preparation
 Instructions:
 1. Download the data from the drive link: https://drive.google.com/drive/folders/1lrDkQanWtTznf48FCaW5lX9ToRdNDF1a (for lego); https://vision.middlebury.edu/mview/data/data/dino.zip (for dino) and arrange into appropriate folders
 2. Run the following:
@@ -22,7 +23,7 @@ Instructions:
 python dataloaders/lego_dataloader.py --train_img_dir="path/to/train/image/dir" --train_param_dir="path/to/transforms/train.json" --test_img_dir="path/to/test/image/dir" --test_param_dir="path/to/transforms/train.json" --final_dir= "dir/to/store/file.npz"
 ```
 
-After data preparation, steps to train the nerf:
+##  Training the NeRF
 
 1. Move the generated .npz file to "data" folder
 2. Ensure you're in the NeRFForAll directory
