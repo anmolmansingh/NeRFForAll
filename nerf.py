@@ -260,7 +260,7 @@ def render_images(model, test_dataset):
             # image = comp_rgb.reshape(200, 200, 3).cpu().numpy()
             plt.imsave(f"final_render/render_{i}.jpg", image)
             
-    create_gif('final_render', 'gifs/training.gif')
+    create_gif('final_render', 'final_render/training.gif')
     
 def render_depth(model, test_dataset):
     # testing
