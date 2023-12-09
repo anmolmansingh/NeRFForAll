@@ -1,3 +1,4 @@
+import argparse
 import math
 import imageio
 import os
@@ -22,25 +23,22 @@ def create_gif(image_folder, gif_path, duration=5):
     images = [imageio.imread(filename) for filename in filenames]
     imageio.mimsave(gif_path, images, duration=duration)
 
-def load_data():
-    data = np.load(f"drive/MyDrive/EECS 504/Final Project/data/temple_640x480.npz")
+def load_data(params):
+    data = np.load("data/" + params.data_file)
 
-    # Training images: [100, 640, 480, 3]
+    # Training images:
     images_train = data["images_train"] / 255.0
 
     # Cameras for the training images 
-    # (camera-to-world transformation matrix): [100, 4, 4]
     c2ws_train = data["c2ws_train"]
 
     # Validation images: 
     images_val = data["images_val"] / 255.0
 
     # Cameras for the validation images: [10, 4, 4]
-    # (camera-to-world transformation matrix): [10, 640, 480, 3]
     c2ws_val = data["c2ws_val"]
 
     # Test cameras for novel-view video rendering: 
-    # (camera-to-world transformation matrix): [47, 4, 4]
     c2ws_test = data["c2ws_test"]
 
     # Camera focal length
@@ -171,7 +169,7 @@ def positional_encoding(x, L):
     freqs = 2.0 ** torch.arange(L).float().to(x.device)
     x_input = x.unsqueeze(-1) * freqs * 2 * torch.pi
     encoding = torch.cat([torch.sin(x_input), torch.cos(x_input)], dim=-1)
-    encoding = torch.cat([x, encoding.reshape(*x.shape[:-1], -1)], dim=-1) # add to original input    
+    encoding = torch.cat([x, encoding.reshape(*x.shape[:-1], -1)], dim=-1) # add to original input
     return encoding
 
 def psnr(image1, image2):
@@ -258,11 +256,11 @@ def render_images(model, test_dataset):
             rgb, sigmas = model(points, rays_d)
             comp_rgb = volrend(sigmas, rgb, step_size=(6.0 - 2.0) / 64)
             # save image
-            image = comp_rgb.reshape(640, 480, 3).cpu().numpy()
+            image = comp_rgb.reshape(200, 200, 3).cpu().numpy()
             # image = comp_rgb.reshape(200, 200, 3).cpu().numpy()
-            plt.imsave(f"drive/MyDrive/EECS 504/Final Project/final_render/render_{i}.jpg", image)
+            plt.imsave(f"final_render/render_{i}.jpg", image)
             
-    create_gif('final_render', 'drive/MyDrive/EECS 504/Final Project/gifs/training.gif')
+    create_gif('final_render', 'gifs/training.gif')
     
 def render_depth(model, test_dataset):
     # testing
@@ -276,16 +274,15 @@ def render_depth(model, test_dataset):
             rgb, sigmas = model(points, rays_d)
             comp_depth = volrend_depth(sigmas, step_size=(6.0 - 2.0) / 64)
             # save image
-            image = comp_depth.reshape(640, 480).cpu().numpy()
-            # image = comp_depth.reshape(200, 200).cpu().numpy()
-            
+            image = comp_depth.reshape(200, 200).cpu().numpy()
+            # image = comp_depth.reshape(640, 480).cpu().numpy()    
             # normalize from 0 to 1
             depth_min = image.min()
             depth_max = image.max()
             image = (image - depth_min) / (depth_max - depth_min)
-            plt.imsave(f"drive/MyDrive/EECS 504/Final Project/depth/render_{i}.jpg", image, cmap='gray')
+            plt.imsave(f"depth/render_{i}.jpg", image, cmap='gray')
             
-    create_gif('depth', 'drive/MyDrive/EECS 504/Final Project/depth/training.gif')
+    create_gif('depth', 'depth/training.gif')
 
 def train_model(model, train_dataset, val_dataset, test_dataset, optimizer, criterion, iters=3000, batch_size=10000, device='cuda'):
     
@@ -325,14 +322,14 @@ def train_model(model, train_dataset, val_dataset, test_dataset, optimizer, crit
                 print(f"Validation PSNR: {curr_psnr:.2f} dB")
                 psnr_scores.append(curr_psnr)
                 # save image
-                image = comp_rgb.reshape(640, 480, 3).cpu().numpy()
+                image = comp_rgb.reshape(200, 200, 3).cpu().numpy()
                 # image = comp_rgb.reshape(640, 480, 3).cpu().numpy()
-                plt.imsave(f"drive/MyDrive/EECS 504/Final Project/nerf_output/iter{i+1}.jpg", image)
+                plt.imsave(f"nerf_output/iter{i+1}.jpg", image)
             model.train()
                         
     # save checkpoint
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    torch.save(model.state_dict(), f"drive/MyDrive/EECS 504/Final Project/checkpoints/nerf_checkpoint_{timestamp}.pt")
+    torch.save(model.state_dict(), f"checkpoints/nerf_checkpoint_{timestamp}.pt")
     
     # create PSNR plot
     plt.figure()
@@ -340,15 +337,14 @@ def train_model(model, train_dataset, val_dataset, test_dataset, optimizer, crit
     plt.xlabel('Iteration')
     plt.ylabel('PSNR (dB)')
     plt.title('PSNR vs. Iteration')
-    plt.savefig('drive/MyDrive/EECS 504/Final Project/plots/psnr_nerf.png')
+    plt.savefig('plots/psnr_nerf.png')
     
     render_images(model, test_dataset)
 
-if __name__ == "__main__":
-    
+def main(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    images_train, c2ws_train, images_val, c2ws_val, c2ws_test, focal = load_data()
+    images_train, c2ws_train, images_val, c2ws_val, c2ws_test, focal = load_data(params)
     
     # prepare data
     images_train = torch.tensor(images_train).float().to(device)
@@ -360,17 +356,30 @@ if __name__ == "__main__":
     K_train = intrinsic_matrix(focal.item(), focal.item(), images_train.shape[1] / 2, images_train.shape[2] / 2).unsqueeze(0).repeat(images_train.shape[0], 1, 1).to(device)
     K_val = intrinsic_matrix(focal.item(), focal.item(), images_val.shape[1] / 2, images_val.shape[2] / 2).unsqueeze(0).repeat(images_val.shape[0], 1, 1).to(device)
     K_test = intrinsic_matrix(focal.item(), focal.item(), images_val.shape[1] / 2, images_val.shape[2] / 2).unsqueeze(0).repeat(c2ws_test.shape[0], 1, 1).to(device)
-    
+
     # training
     model = MLP().to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
     criterion = nn.MSELoss()
-    batch_size = 10000
-    iters = 3000
+    batch_size = params.batch_size
+    iters = params.iters
     train_dataset = RaysData(images_train, K_train, c2ws_train)
     val_dataset = RaysData(images_val, K_val, c2ws_val)
     # pass in dummy images to test_dataset, won't be used
     test_dataset = RaysData(images_train[:60], K_test, c2ws_test)
-    
+
     train_model(model, train_dataset, val_dataset, test_dataset, optimizer, criterion, iters=iters, batch_size=batch_size, device=device)
     render_images(model, test_dataset)
+
+# adding argparser
+if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser(description="Vanilla NeRF")
+
+    parser.add_argument("--data_file", type=str, default="lego_200x200.npz")
+    parser.add_argument("--batch_size", type=int, default=10000)
+    parser.add_argument("--iters", type=int, default=3000)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
+
+    params, unknown = parser.parse_known_args()
+    main(params)
