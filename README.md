@@ -2,7 +2,8 @@
 
 An adaptation of a simple Python NeRF architecture (https://github.com/ayaanzhaque/nerf-from-scratch/tree/main) on the Middlebury dataset (https://vision.middlebury.edu/mview/data/). Data processing and other changes to the nerf architecture, to adapt to the dataset, included.
 
-![](https://github.com/anmolmansingh/NeRFForAll/tree/main/gifs)
+![](https://github.com/anmolmansingh/NeRFForAll/tree/main/gifs/training.gif)
+
 ## Environment Setup:
 
 ```
