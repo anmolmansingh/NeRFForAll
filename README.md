@@ -9,8 +9,11 @@ Setup:
 !pip install -r nerf-from-scratch/requirements.txt
 ```
 
-To train the nerf:
+Steps to train the nerf:
+
+1. Navigate to the NeRFForAll directory
+2. Run the following:
 
 ```
-python nerf.py
+python nerf.py --data_file=<data_file> --batch_size=<batch_size> --iters=<iters> --learning_rate=<learning_rate>
 ```
