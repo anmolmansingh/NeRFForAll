@@ -9,10 +9,22 @@ Setup:
 !pip install -r nerf-from-scratch/requirements.txt
 ```
 
-Steps to train the nerf:
+Before training the NeRF, you need to make sure the image data is formatted as an .npz.
 
-1. Navigate to the NeRFForAll directory
-2. Run the following:
+For this purpose, we provide you dataloader utilities to run.
+
+Instructions:
+1. Download the data from the drive link: https://drive.google.com/drive/folders/1lrDkQanWtTznf48FCaW5lX9ToRdNDF1a (for Lego)
+2. We will share the .npz file for dino dataset soon, but you can follow the same steps for it.
+```
+python dataloaders/lego_dataloader.py --train_img_dir "path/to/train/image/dir" --train_param_dir "path/to/transforms/train.json" --test_img_dir "path/to/test/image/dir" --test_param_dir "path/to/transforms/train.json" --final_dir "dir/to/store/file.npz"
+```
+
+After data preparation, steps to train the nerf:
+
+1. Move the generated npz file to "data" folder
+2. Navigate to the NeRFForAll directory
+3. Run the following:
 
 ```
 python nerf.py --data_file=<data_file> --batch_size=<batch_size> --iters=<iters> --learning_rate=<learning_rate>
